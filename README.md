@@ -1,4 +1,4 @@
-# Spotics
+# Spotics - v2.0
 
 Displays the lyrics of the song you are listening to on Spotify
 
@@ -18,3 +18,5 @@ Displays the lyrics of the song you are listening to on Spotify
 - Fixed some bugs, problems and errors.
 - Improved (or maybe not) some code snippet.
 
+
+Thank you!
