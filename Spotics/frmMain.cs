@@ -127,6 +127,7 @@ namespace Spotics {
         private void cbSizeFont_SelectedValueChanged(object sender, EventArgs e) {
             Font font = new Font(textBoxLetra.Font.FontFamily, Int32.Parse(cbSizeFont.SelectedItem.ToString()));
             textBoxLetra.Font = font;
+            SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), toggleAutoRefresh);
 
         }
 
