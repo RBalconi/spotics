@@ -12,10 +12,11 @@ namespace Spotics {
         
         public static string _currentSong = "";
         private bool toggleAutoRefresh = true;
-
+        private bool saveTXT = true;
 
         public frmMain() {
             InitializeComponent();
+
             cbSizeFont.SelectedIndex = 2;
             ReadTXT();
             if (toggleAutoRefresh) {
@@ -121,18 +122,21 @@ namespace Spotics {
 
         }
 
+     
+
 
         //-------------------------
 
         private void cbSizeFont_SelectedValueChanged(object sender, EventArgs e) {
             Font font = new Font(textBoxLetra.Font.FontFamily, Int32.Parse(cbSizeFont.SelectedItem.ToString()));
             textBoxLetra.Font = font;
-            SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), toggleAutoRefresh);
-
+            
+            //SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), true);
         }
 
         private void pictureBox2_Click(object sender, EventArgs e){
             this.Close();
+            SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), saveTXT);
         }
 
         private void pictureBox4_Click(object sender, EventArgs e){
@@ -141,6 +145,7 @@ namespace Spotics {
 
         private void imgCloseConfg_Click(object sender, EventArgs e){
             panelConfig.Visible = false;
+            SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), saveTXT);
         }
         private void imgConfg_Click(object sender, EventArgs e){
             panelConfig.Visible = true;            
@@ -156,12 +161,13 @@ namespace Spotics {
             if (toggleAutoRefresh == false) {
                 timer.Enabled = true;
                 toggleAutoRefresh = false;
-                
-                SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), true);
+                saveTXT = true;
+                //SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), saveTXT);
             } else {
                 timer.Enabled = false;
                 toggleAutoRefresh = true;
-                SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), false);
+                saveTXT = false;
+                //SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), false);
             }
         }
 
@@ -170,12 +176,13 @@ namespace Spotics {
             if (toggleAutoRefresh == false) {
                 timer.Enabled = true;
                 toggleAutoRefresh = false;
-
-                SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), true);
+                saveTXT = true;
+                //SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), true);
             } else {
                 timer.Enabled = false;
                 toggleAutoRefresh = true;
-                SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), false);
+                saveTXT = false;
+                //SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), false);
             }
         }
 
