@@ -2,169 +2,182 @@
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Spotics
-{
-    public partial class frmMain : Form
-    {
-        private readonly Timer _tmr = new Timer();
-        private static string _currentSong = "";
-        private bool _darkMode = true;
+namespace Spotics {
+    public partial class frmMain : Form {
+        
+        public static string _currentSong = "";
+        private bool toggleAutoRefresh = true;
 
-        public frmMain()
-        {
+
+        public frmMain() {
             InitializeComponent();
-
-            _tmr.Interval = 5000;
-            _tmr.Tick += AutoRefresh;
+            cbSizeFont.SelectedIndex = 2;
+            ReadTXT();
+            if (toggleAutoRefresh) {
+                timer.Enabled = true;
+            }
+            panelConfig.Visible = false;
         }
 
-        private void AutoRefresh(object sender, EventArgs e)
-        {
-            try
-            {
-                RefreshAndUpdate();
-            }
-            catch
-            {
-                textBoxLetra.Text = string.Empty;
-                _tmr.Stop();
-                _tmr.Enabled = false;
-                chkAutoUpdate.Checked = false;
-            }
-        }
 
-        private void RefreshAndUpdate()
-        {
+        public void RefreshSong() {
             labelTocando.Text = GetSpotifyTrackInfo();
+        }
 
-            if (labelTocando.Text != _currentSong)
-            {
+        public void UpdateSong() {
+            if (labelTocando.Text != _currentSong) {
                 _currentSong = labelTocando.Text;
-                DownloadDetails();
+                DownloadDetails(labelTocando.Text);
             }
         }
 
-        private void ButtonTocando_Click(object sender, EventArgs e)
-        {
-            RefreshAndUpdate();
-        }
-
-        private static string GetSpotifyTrackInfo()
-        {
+        private static string GetSpotifyTrackInfo(){
             var proc = Process.GetProcessesByName("Spotify").FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.MainWindowTitle));
 
-            if (proc == null)
-            {
+            if (proc == null){
                 return "Spotify não está rodando!";
             }
-
-            if (string.Equals(proc.MainWindowTitle, "Spotify", StringComparison.InvariantCultureIgnoreCase))
-            {
+            if (string.Equals(proc.MainWindowTitle, "Spotify", StringComparison.InvariantCultureIgnoreCase)){
                 return "Pausado";
             }
-
             return proc.MainWindowTitle;
         }
 
-        private void DownloadDetails()
-        {
-            string track = labelTocando.Text;
-            string artist = track.Split('-')[0];
-            string music = track.Split('-')[1];
-            string key = ""; // Sua key da API do Vagalume
+        private void DownloadDetails(string track){
+            string[] data = track.Split('-');
+            string artist = "";
+            string music = "";
+          
+            if (data.Length > 1) {
+                artist = data[0];
+                music = data[1];
+            } 
 
-            using (var wc = new WebClient())
-            {
+            string key = "";
+
+            using (var wc = new WebClient()){
                 var uri = new Uri($"https://api.vagalume.com.br/search.php?art={artist}&mus={music}&apikey={key}");
                 wc.DownloadStringCompleted += wc_DownloadStringCompleted;
                 wc.DownloadStringAsync(uri);
             }
         }
-
-        private void wc_DownloadStringCompleted(object sender, DownloadStringCompletedEventArgs e)
-        {
-            try
-            {
+        
+        private void wc_DownloadStringCompleted(object sender, DownloadStringCompletedEventArgs e){
+            try{
                 var json = e.Result;
                 SongDetails result = JsonConvert.DeserializeObject<SongDetails>(json);
-                textBoxLetra.Text = result.type.Contains("notfound") ? "Ocorreu algum erro! Música não reconhecida." : result.mus[0].text.Replace("\n", Environment.NewLine);
-            }
-            catch
-            {
+                if (result.type.Contains("notfound")) {
+                    textBoxLetra.Text = "Ocorreu algum erro! Música não reconhecida.";
+                } else {
+                    textBoxLetra.Text = result.mus[0].text.Replace("\n", Environment.NewLine);
+                }
+            }catch{
                 textBoxLetra.Text = "Ocorreu algum erro! Música não reconhecida.";
             }
         }
 
-        private void ButtonMais_Click(object sender, EventArgs e)
-        {
-            float len = textBoxLetra.Font.Size;
-            Font font = new Font(textBoxLetra.Font.FontFamily, len + 1);
+        private void SaveTXT(int _fontSize, bool _autoRefresh) {
+            string path = System.AppDomain.CurrentDomain.BaseDirectory.ToString();
+            //string path = Path.GetDirectoryName(Application.ExecutablePath);
+
+
+            File.Delete(@path + "data.txt");
+
+            FileStream fs = new FileStream(@path + "data.txt", FileMode.Append);
+            StreamWriter sw = new StreamWriter(fs);
+
+            sw.WriteLine(_fontSize);
+            sw.WriteLine(_autoRefresh);
+
+            sw.Flush();
+            sw.Close();
+            fs.Close();
+        }
+
+        private void ReadTXT() {
+            String path = System.AppDomain.CurrentDomain.BaseDirectory.ToString() + "data.txt";
+
+            if (File.Exists(path)) {
+
+                string[] lines = File.ReadAllLines(path);
+                
+                cbSizeFont.SelectedIndex = cbSizeFont.FindStringExact(lines[0]);
+                toggleAutoRefresh = bool.Parse(lines[1]);
+                if (toggleAutoRefresh) {
+                    switchSongOn.Visible = true;
+                    switchSongOff.Visible = false;
+
+                } else {
+                    switchSongOn.Visible = false;
+                    switchSongOff.Visible = true;
+                }
+
+            }
+
+        }
+
+
+        //-------------------------
+
+        private void cbSizeFont_SelectedValueChanged(object sender, EventArgs e) {
+            Font font = new Font(textBoxLetra.Font.FontFamily, Int32.Parse(cbSizeFont.SelectedItem.ToString()));
             textBoxLetra.Font = font;
+
         }
 
-        private void ButtonMenos_Click(object sender, EventArgs e)
-        {
-            float len = textBoxLetra.Font.Size;
-            Font font = new Font(textBoxLetra.Font.FontFamily, len - 1);
-            textBoxLetra.Font = font;
+        private void pictureBox2_Click(object sender, EventArgs e){
+            this.Close();
         }
 
-        private void ChkAutoUpdate_CheckedChanged(object sender, EventArgs e)
-        {
-            if (chkAutoUpdate.Checked)
-            {
-                _tmr.Start();
-                _tmr.Enabled = true;
-            }
-            else
-            {
-                _tmr.Stop();
-                _tmr.Enabled = false;
+        private void pictureBox4_Click(object sender, EventArgs e){
+            this.WindowState = FormWindowState.Minimized;
+        }
+
+        private void imgCloseConfg_Click(object sender, EventArgs e){
+            panelConfig.Visible = false;
+        }
+        private void imgConfg_Click(object sender, EventArgs e){
+            panelConfig.Visible = true;            
+        }
+        
+        private void timer_Tick(object sender, EventArgs e) {
+            RefreshSong();
+            UpdateSong();
+        }
+
+        private void switchSong_SwitchStateChanged(object sender, EventArgs e) {
+            
+            if (toggleAutoRefresh == false) {
+                timer.Enabled = true;
+                toggleAutoRefresh = false;
+                
+                SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), true);
+            } else {
+                timer.Enabled = false;
+                toggleAutoRefresh = true;
+                SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), false);
             }
         }
 
-        private void S_Click(object sender, EventArgs e)
-        {
-            if (!_darkMode)
-            {
-                this.BackColor = SystemColors.Control;
 
-                foreach (Control child in this.Controls)
-                {
-                    child.ForeColor = Color.Black;
-                    textBoxLetra.BackColor = SystemColors.Control;
-                }
+        private void switchSongOff_SwitchStateChanged(object sender, EventArgs e) {
+            if (toggleAutoRefresh == false) {
+                timer.Enabled = true;
+                toggleAutoRefresh = false;
 
-                foreach (var button in this.Controls.OfType<Button>())
-                {
-                    button.BackColor = SystemColors.Control;
-                }
+                SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), true);
+            } else {
+                timer.Enabled = false;
+                toggleAutoRefresh = true;
+                SaveTXT(Int32.Parse(cbSizeFont.SelectedItem.ToString()), false);
             }
-            else
-            {
-                this.BackColor = Color.FromArgb(41, 41, 41);
-
-                foreach (Control child in this.Controls)
-                {
-                    child.ForeColor = Color.WhiteSmoke;
-                    textBoxLetra.BackColor = Color.FromArgb(41, 41, 41);
-                }
-
-                foreach (var button in this.Controls.OfType<Button>())
-                {
-                    button.BackColor = Color.FromArgb(100, 100, 100);
-                    button.FlatStyle = FlatStyle.Flat;
-                    button.FlatAppearance.BorderColor = Color.DarkGray;
-                }
-            }
-
-            btnChangeTheme.Text = _darkMode ? "White mode" : "Dark mode";
-            _darkMode = !_darkMode;
         }
+
+
     }
 }
